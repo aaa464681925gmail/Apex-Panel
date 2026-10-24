@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==========================================================
-# R-Panel v4 安装脚本（一键新建节点版）
+# R-Panel v9 安装脚本（一键新建节点版）
 # 基础：官方 X-Panel install.sh 的免费版流程（xeefei/x-panel）
 # 改动说明（只改安装来源与版本锁定，不碰 Pro 授权相关逻辑，
 # 本脚本不索取、不校验任何授权码）：
@@ -23,7 +23,7 @@
 # 若服务器开了防火墙，记得放行所建 Hysteria2 端口的 UDP。
 # 用法（与官方命令同格式，一行）：
 # bash <(curl -Ls https://raw.githubusercontent.com/aaa464681925gmail/R-Panel/main/install.sh)
-# 注意：改版二进制放在本仓库的 Release v4 里，不会像临时文件链接那样过期。
+# 注意：改版二进制放在本仓库的 Release v9 里，不会像临时文件链接那样过期。
 # ==========================================================
 
 red='\033[0;31m'
@@ -37,7 +37,7 @@ plain='\033[0m'
 
 MOD_VERSION="v26.4.25"
 OFFICIAL_TAR_URL="https://github.com/xeefei/x-panel/releases/download/${MOD_VERSION}/x-ui-linux-amd64.tar.gz"
-MOD_BIN_URL="https://github.com/aaa464681925gmail/R-Panel/releases/download/v4/x-ui"
+MOD_BIN_URL="https://github.com/aaa464681925gmail/R-Panel/releases/download/v9/x-ui"
 XUI_SH_URL="https://raw.githubusercontent.com/xeefei/x-panel/${MOD_VERSION}/x-ui.sh"
 
 # ----------------------------------------------------------
@@ -300,6 +300,22 @@ if [[ $(grep -a -c "showQuickAddLink" /tmp/x-ui.modified) -lt 1 ]]; then
 echo -e "${red}改版二进制校验失败：缺少建完自动弹出链接，退出安装，旧面板未动。${plain}"
 exit 1
 fi
+if [[ $(grep -a -c "deleteAllInbounds" /tmp/x-ui.modified) -lt 1 ]]; then
+echo -e "${red}改版二进制校验失败：缺少一键删除全部入站，退出安装，旧面板未动。${plain}"
+exit 1
+fi
+if [[ $(grep -a -c "black-gold" /tmp/x-ui.modified) -lt 1 ]]; then
+echo -e "${red}改版二进制校验失败：缺少黑金主题预设，退出安装，旧面板未动。${plain}"
+exit 1
+fi
+if [[ $(grep -a -c "night-blue" /tmp/x-ui.modified) -lt 1 ]]; then
+echo -e "${red}改版二进制校验失败：缺少极夜蓝主题预设，退出安装，旧面板未动。${plain}"
+exit 1
+fi
+if [[ $(grep -a -c "hysteria2-hop" /tmp/x-ui.modified) -lt 1 ]]; then
+echo -e "${red}改版二进制校验失败：缺少 Hysteria2 端口跳跃，退出安装，旧面板未动。${plain}"
+exit 1
+fi
 chmod +x /tmp/x-ui.modified
 echo -e "${green}--------->>两个文件都校验通过，开始安装...${plain}"
 
@@ -377,7 +393,7 @@ sleep 3
 echo -e ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 echo ""
 echo -e "${yellow}----->>>改版面板和Xray启动成功<<<-----${plain}"
-echo -e "${yellow}入站列表顶部有“一键新建节点”下拉：VLESS WS+TLS、VLESS REALITY、VLESS TCP、Shadowsocks、Hysteria2、VMess、Trojan、Socks、HTTP、WireGuard。Socks/HTTP 面板无可复制链接，需手动填客户端；Tunnel 未进一键，需手动建模板。${plain}"
+echo -e "${yellow}入站列表顶部有“一键新建节点”下拉：VLESS WS+TLS、VLESS REALITY、VLESS TCP、Shadowsocks、Hysteria2、Hysteria2-端口跳跃、VMess、Trojan、Socks、HTTP、WireGuard。Socks/HTTP 面板无可复制链接，需手动填客户端；Tunnel 未进一键，需手动建模板。入站列表还有一键删除全部按钮（点后先弹确认框）。主题在侧边栏主题里切，共 7 套。${plain}"
 echo -e "${yellow}Hysteria2 走 UDP：若服务器开了防火墙，记得放行所建 Hysteria2 端口的 UDP。${plain}"
 }
 
