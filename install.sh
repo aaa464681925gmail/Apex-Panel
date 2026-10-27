@@ -22,7 +22,7 @@
 # 若服务器开了防火墙，记得放行所建 Hysteria2 端口的 UDP。
 # 用法（与官方命令同格式，一行）：
 # bash <(curl -Ls https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/main/install.sh)
-# 注意：改版二进制放在本仓库的 Release v12 里，不会像临时文件链接那样过期。
+# 注意：改版二进制放在本仓库的 Release v33 里，不会像临时文件链接那样过期。
 # ==========================================================
 
 red='\033[0;31m'
@@ -36,7 +36,7 @@ plain='\033[0m'
 
 MOD_VERSION="v26.4.25"
 OFFICIAL_TAR_URL="https://github.com/xeefei/x-panel/releases/download/${MOD_VERSION}/x-ui-linux-amd64.tar.gz"
-MOD_BIN_URL="https://github.com/aaa464681925gmail/Apex-Panel/releases/download/v31/x-ui"
+MOD_BIN_URL="https://github.com/aaa464681925gmail/Apex-Panel/releases/download/v33/x-ui"
 XUI_SH_URL="https://raw.githubusercontent.com/xeefei/x-panel/${MOD_VERSION}/x-ui.sh"
 
 # ----------------------------------------------------------
