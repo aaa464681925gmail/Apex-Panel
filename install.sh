@@ -36,7 +36,7 @@ plain='\033[0m'
 
 MOD_VERSION="v26.4.25"
 OFFICIAL_TAR_URL="https://github.com/xeefei/x-panel/releases/download/${MOD_VERSION}/x-ui-linux-amd64.tar.gz"
-MOD_BIN_URL="https://github.com/aaa464681925gmail/Apex-Panel/releases/download/v38/x-ui"
+MOD_BIN_URL="https://github.com/aaa464681925gmail/Apex-Panel/releases/download/v39/x-ui"
 XUI_SH_URL="https://raw.githubusercontent.com/xeefei/x-panel/${MOD_VERSION}/x-ui.sh"
 
 # ----------------------------------------------------------
