@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==========================================================
-# Apex Panel v40 安装脚本（一键新建节点版）
+# Apex Panel v41 安装脚本（一键新建节点版）
 # 基础：官方 X-Panel install.sh 的免费版流程（xeefei/x-panel）
 # 改动说明（只改安装来源与版本锁定）：
 # 1. 面板版本固定为 v26.4.25，不再去 GitHub API 取最新版。
@@ -20,6 +20,11 @@
 # 校验，装到 /usr/local/x-ui/tcpfit.sh，菜单 26 离线调用，默认关闭其
 # 匿名运行计数。tcpfit 版本跟随本仓库发版更新，机器上不各自自更新。
 # 改版二进制来源不变，仍为本仓库 Release v39。
+# 8. v41 起随包内置 EZrealm v1.1.1（本仓库 realm.sh）：下载后按固定 SHA256
+# 校验，装到 /usr/local/x-ui/realm.sh，菜单 27「Realm 中转」调用，并带
+# --no-update 跳过它自带的更新检查（同 tcpfit，版本跟随发版）。它管理的
+# 仍是 /root/realm/config.toml 与 realm.service，已装过 Realm 的机器原有
+# 转发规则不受影响，安装过程不碰 /root/realm。
 # 5. 保留官方 config_after_install() 的设账号流程：
 # 选 y 依次设用户名、密码、面板端口、访问路径；
 # 选 n 且全新安装时打印随机账号密码路径，之后可用 x-ui
@@ -46,6 +51,8 @@ MOD_BIN_URL="https://github.com/aaa464681925gmail/Apex-Panel/releases/download/v
 XUI_SH_URL="https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/main/x-ui.sh"
 TCPFIT_URL="https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/main/tcpfit.sh"
 TCPFIT_SHA256="8331cc40950229a3280ce32406330a85b1a3d21ba398a4db3dc7e25c39783741"
+REALM_URL="https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/main/realm.sh"
+REALM_SHA256="1a165435d9c38e7c1bac91ca85d59e8485c31223c300ff1cd9e7f5af4069464a"
 
 # ----------------------------------------------------------
 # 检查操作系统与架构（amd64 专属）
@@ -335,7 +342,7 @@ echo -e "${red}管理脚本为空，退出安装，旧面板未动。${plain}"
 exit 1
 fi
 
-if [[ $(grep -c "TCP 调优" /usr/bin/x-ui-temp) -lt 1 || $(grep -c "apex-panel" /usr/bin/x-ui-temp) -lt 1 || $(grep -c "aff.php" /usr/bin/x-ui-temp) -ne 0 ]]; then
+if [[ $(grep -c "TCP 调优" /usr/bin/x-ui-temp) -lt 1 || $(grep -c "Realm 中转" /usr/bin/x-ui-temp) -lt 1 || $(grep -c "apex-panel" /usr/bin/x-ui-temp) -lt 1 || $(grep -c "aff.php" /usr/bin/x-ui-temp) -ne 0 ]]; then
 echo -e "${red}管理脚本校验失败：不是本仓库的 apex-panel 版（缺 TCP 调优菜单、显示名不对或仍带推广），退出安装，旧面板未动。${plain}"
 exit 1
 fi
@@ -358,6 +365,24 @@ echo -e "${red}tcpfit 版本校验失败：不是 v0.5.9，退出安装，旧面
 exit 1
 fi
 
+echo -e "${green}--------->>下载内置 EZrealm v1.1.1...${plain}"
+curl -fsSL ${REALM_URL} -o /tmp/realm.sh || {
+echo -e "${red}下载 EZrealm 失败，退出安装，旧面板未动。${plain}"
+exit 1
+}
+if [[ ! -s /tmp/realm.sh ]]; then
+echo -e "${red}EZrealm 文件为空，退出安装，旧面板未动。${plain}"
+exit 1
+fi
+if [[ "$(sha256sum /tmp/realm.sh | awk '{print $1}')" != "${REALM_SHA256}" ]]; then
+echo -e "${red}EZrealm SHA256 校验不通过，退出安装，旧面板未动。${plain}"
+exit 1
+fi
+if [[ $(grep -c 'CURRENT_VERSION="1.1.1"' /tmp/realm.sh) -ne 1 ]]; then
+echo -e "${red}EZrealm 版本校验失败：不是 v1.1.1，退出安装，旧面板未动。${plain}"
+exit 1
+fi
+
 
 # ---- 第二步：停服务、删旧目录、解压 ----
 if [[ -e /usr/local/x-ui/ ]]; then
@@ -377,12 +402,16 @@ cp -f /usr/bin/x-ui-temp ./x-ui.sh
 # 内置 tcpfit 放到面板目录，菜单 26 从这里调用
 cp -f /tmp/tcpfit.sh ./tcpfit.sh
 rm -f /tmp/tcpfit.sh
+# 内置 EZrealm 放到面板目录，菜单 27 从这里调用（不碰 /root/realm 里已有的配置）
+cp -f /tmp/realm.sh ./realm.sh
+rm -f /tmp/realm.sh
 # ---- 第三步：用改版二进制覆盖官方二进制 ----
 cp -f /tmp/x-ui.modified ./x-ui
 rm -f /tmp/x-ui.modified
 chmod +x x-ui
 chmod +x x-ui.sh
 chmod +x tcpfit.sh
+chmod +x realm.sh
 chmod +x x-ui bin/xray-linux-amd64
 
 mv -f /usr/bin/x-ui-temp /usr/bin/x-ui

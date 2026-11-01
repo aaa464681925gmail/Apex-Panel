@@ -10,6 +10,12 @@ bash <(curl -Ls https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/m
 
 安装后按提示操作。已装旧版要升级时，在安装提示里选 n，保留旧的登录、端口、路径和入站，不要点面板里的“更新面板”按钮，否则会被覆盖回官方版。
 
+## v41 主要内容（在 v40 基础上新增）
+
+- 新增菜单 27「Realm 中转」：随包内置 EZrealm v1.1.1，装在 /usr/local/x-ui/realm.sh，调用时带 --no-update（版本跟随发版，和 tcpfit 同一政策）
+- EZrealm 管理的仍是 /root/realm/config.toml 与 realm.service：已经装过 Realm 的机器（如中转机）升级后原有转发规则照常显示和运行，安装过程不碰 /root/realm
+- 本版只改安装脚本和管理脚本，面板二进制不变，仍为 Release v39
+
 ## v40 主要内容（版本号与二进制 Release 统一，在 v39 基础上新增）
 
 - 管理脚本改名：菜单里显示的名字由 X-Panel 改为 apex-panel（脚本内的 GitHub 功能地址不动）
@@ -40,4 +46,4 @@ bash <(curl -Ls https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/m
 ## 注意
 
 - Hysteria2 端口跳跃需要自己放行 UDP 端口段并做 DNAT，面板里有命令提示
-- 本仓库保留 v4、v9、v11 Release，v40 为最新版（二进制构建仍为 v39）
+- 本仓库保留 v4、v9、v11 Release，v41 为最新版（二进制构建仍为 v39）

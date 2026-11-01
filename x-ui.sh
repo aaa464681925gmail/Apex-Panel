@@ -2063,6 +2063,16 @@ run_tcpfit() {
     before_show_menu
 }
 
+run_realm() {
+    local realm_script="/usr/local/x-ui/realm.sh"
+    # 随发版走：带 --no-update 跳过 EZrealm 的自带更新检查，避免单机自更新与包内版本脱节
+    if [[ -f ${realm_script} ]]; then
+        bash "${realm_script}" --no-update
+    else
+        echo -e "${red}未找到内置 realm 管理脚本：${realm_script}，请重新运行安装脚本补齐${plain}"
+    fi
+}
+
 show_menu() {
     echo -e "
 ——————————————————————
@@ -2102,10 +2112,11 @@ show_menu() {
   ${green}24.${plain} Speedtest by Ookla
   ${green}25.${plain} 安装订阅转换 
   ${green}26.${plain} TCP 调优
+  ${green}27.${plain} Realm 中转
 ——————————————————————
 "
     show_status
-    echo && read -p "请输入选项 [0-26]: " num
+    echo && read -p "请输入选项 [0-27]: " num
 
     case "${num}" in
     0)
@@ -2189,8 +2200,11 @@ show_menu() {
     26)
         run_tcpfit
         ;;
+    27)
+        run_realm
+        ;;
     *)
-        LOGE "请输入正确的数字选项 [0-26]"
+        LOGE "请输入正确的数字选项 [0-27]"
         ;;
     esac
 }
