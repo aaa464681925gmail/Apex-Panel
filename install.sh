@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==========================================================
-# Apex Panel v12 安装脚本（一键新建节点版）
+# Apex Panel v40 安装脚本（一键新建节点版）
 # 基础：官方 X-Panel install.sh 的免费版流程（xeefei/x-panel）
 # 改动说明（只改安装来源与版本锁定）：
 # 1. 面板版本固定为 v26.4.25，不再去 GitHub API 取最新版。
@@ -12,8 +12,14 @@
 # （非空、改版二进制内含“一键新建节点”和 getNewHyCert）
 # 之后，才停服务、删旧目录、解压、覆盖二进制。
 # 任一下载或校验失败都会在动旧安装之前退出，旧面板不受影响。
-# 4. 管理脚本 x-ui.sh 固定用 v26.4.25 tag 的原始文件，
-# 而不是 main 分支的最新版，以保持与二进制版本一致。
+# 4. 管理脚本 x-ui.sh 改用本仓库维护的版本：以 v26.4.25 tag 原始文件为
+# 底本（与二进制版本一致），已去掉菜单推广段、显示名改为 apex-panel、
+# 新增菜单 26「TCP 调优」。安装时 /usr/bin/x-ui 与 /usr/local/x-ui/x-ui.sh
+# 两份都用它，保证内容一致。
+# 7. 随包内置 tcpfit v0.5.9（本仓库 tcpfit.sh）：下载后按固定 SHA256
+# 校验，装到 /usr/local/x-ui/tcpfit.sh，菜单 26 离线调用，默认关闭其
+# 匿名运行计数。tcpfit 版本跟随本仓库发版更新，机器上不各自自更新。
+# 改版二进制来源不变，仍为本仓库 Release v39。
 # 5. 保留官方 config_after_install() 的设账号流程：
 # 选 y 依次设用户名、密码、面板端口、访问路径；
 # 选 n 且全新安装时打印随机账号密码路径，之后可用 x-ui
@@ -37,7 +43,9 @@ plain='\033[0m'
 MOD_VERSION="v26.4.25"
 OFFICIAL_TAR_URL="https://github.com/xeefei/x-panel/releases/download/${MOD_VERSION}/x-ui-linux-amd64.tar.gz"
 MOD_BIN_URL="https://github.com/aaa464681925gmail/Apex-Panel/releases/download/v39/x-ui"
-XUI_SH_URL="https://raw.githubusercontent.com/xeefei/x-panel/${MOD_VERSION}/x-ui.sh"
+XUI_SH_URL="https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/main/x-ui.sh"
+TCPFIT_URL="https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/main/tcpfit.sh"
+TCPFIT_SHA256="8331cc40950229a3280ce32406330a85b1a3d21ba398a4db3dc7e25c39783741"
 
 # ----------------------------------------------------------
 # 检查操作系统与架构（amd64 专属）
@@ -238,20 +246,20 @@ echo ""
 if [[ -z $v4 ]]; then
 echo -e "${green}1、本地电脑客户端转发命令：${plain} ${blue}ssh -L [::]:15208:127.0.0.1:${existing_port}${blue} root@[$v6]${plain}"
 echo ""
-echo -e "${green}4、请在浏览器地址栏复制${plain} ${blue}[::1]:15208${existing_webBasePath}${plain} ${green}进入〔X-Panel面板〕登录界面"
+echo -e "${green}4、请在浏览器地址栏复制${plain} ${blue}[::1]:15208${existing_webBasePath}${plain} ${green}进入〔apex-panel面板〕登录界面"
 echo ""
 elif [[ -n $v4 && -n $v6 ]]; then
 echo -e "${green}1、本地电脑客户端转发命令：${plain} ${blue}ssh -L 15208:127.0.0.1:${existing_port}${blue} root@$v4${plain} ${yellow}或者 ${blue}ssh -L [::]:15208:127.0.0.1:${existing_port}${blue} root@[$v6]${plain}"
 echo ""
-echo -e "${green}4、请在浏览器地址栏复制${plain} ${blue}127.0.0.1:15208${existing_webBasePath}${plain} ${yellow}或者${plain} ${blue}[::1]:15208${existing_webBasePath}${plain} ${green}进入〔X-Panel面板〕登录界面"
+echo -e "${green}4、请在浏览器地址栏复制${plain} ${blue}127.0.0.1:15208${existing_webBasePath}${plain} ${yellow}或者${plain} ${blue}[::1]:15208${existing_webBasePath}${plain} ${green}进入〔apex-panel面板〕登录界面"
 echo ""
 else
 echo -e "${green}1、本地电脑客户端转发命令：${plain} ${blue}ssh -L 15208:127.0.0.1:${existing_port}${blue} root@$v4${plain}"
 echo ""
-echo -e "${green}4、请在浏览器地址栏复制${plain} ${blue}127.0.0.1:15208${existing_webBasePath}${plain} ${green}进入〔X-Panel面板〕登录界面"
+echo -e "${green}4、请在浏览器地址栏复制${plain} ${blue}127.0.0.1:15208${existing_webBasePath}${plain} ${green}进入〔apex-panel面板〕登录界面"
 echo ""
 fi
-echo -e "${red}注意：若不使用〔ssh转发〕请为X-Panel面板配置安装证书再行登录管理后台${plain}"
+echo -e "${red}注意：若不使用〔ssh转发〕请为apex-panel面板配置安装证书再行登录管理后台${plain}"
 fi
 }
 
@@ -327,8 +335,29 @@ echo -e "${red}管理脚本为空，退出安装，旧面板未动。${plain}"
 exit 1
 fi
 
-# 去掉管理脚本菜单底部的推广和群信息（从该段开头删到菜单 echo 的收尾引号行，不动菜单项本身）
-awk 'BEGIN{skip=0} /若在使用过程中有任何问题/{skip=1} skip && /^"$/ {skip=0; print; next} !skip{print}' /usr/bin/x-ui-temp > /usr/bin/x-ui-temp.clean && mv -f /usr/bin/x-ui-temp.clean /usr/bin/x-ui-temp
+if [[ $(grep -c "TCP 调优" /usr/bin/x-ui-temp) -lt 1 || $(grep -c "apex-panel" /usr/bin/x-ui-temp) -lt 1 || $(grep -c "aff.php" /usr/bin/x-ui-temp) -ne 0 ]]; then
+echo -e "${red}管理脚本校验失败：不是本仓库的 apex-panel 版（缺 TCP 调优菜单、显示名不对或仍带推广），退出安装，旧面板未动。${plain}"
+exit 1
+fi
+
+echo -e "${green}--------->>下载内置 tcpfit v0.5.9...${plain}"
+curl -fsSL ${TCPFIT_URL} -o /tmp/tcpfit.sh || {
+echo -e "${red}下载 tcpfit 失败，退出安装，旧面板未动。${plain}"
+exit 1
+}
+if [[ ! -s /tmp/tcpfit.sh ]]; then
+echo -e "${red}tcpfit 文件为空，退出安装，旧面板未动。${plain}"
+exit 1
+fi
+if [[ "$(sha256sum /tmp/tcpfit.sh | awk '{print $1}')" != "${TCPFIT_SHA256}" ]]; then
+echo -e "${red}tcpfit SHA256 校验不通过，退出安装，旧面板未动。${plain}"
+exit 1
+fi
+if [[ $(grep -c 'VERSION="0.5.9"' /tmp/tcpfit.sh) -ne 1 ]]; then
+echo -e "${red}tcpfit 版本校验失败：不是 v0.5.9，退出安装，旧面板未动。${plain}"
+exit 1
+fi
+
 
 # ---- 第二步：停服务、删旧目录、解压 ----
 if [[ -e /usr/local/x-ui/ ]]; then
@@ -343,13 +372,17 @@ tar zxvf x-ui-linux-amd64.tar.gz
 rm x-ui-linux-amd64.tar.gz -f
 
 cd x-ui || exit 1
-# 同样去掉解压出来的管理脚本菜单底部的推广和群信息
-if [[ -f x-ui.sh ]]; then awk 'BEGIN{skip=0} /若在使用过程中有任何问题/{skip=1} skip && /^"$/ {skip=0; print; next} !skip{print}' x-ui.sh > x-ui.sh.clean && mv -f x-ui.sh.clean x-ui.sh; fi
+# 解压目录里的管理脚本也换成本仓库版本，与 /usr/bin/x-ui 保持一致
+cp -f /usr/bin/x-ui-temp ./x-ui.sh
+# 内置 tcpfit 放到面板目录，菜单 26 从这里调用
+cp -f /tmp/tcpfit.sh ./tcpfit.sh
+rm -f /tmp/tcpfit.sh
 # ---- 第三步：用改版二进制覆盖官方二进制 ----
 cp -f /tmp/x-ui.modified ./x-ui
 rm -f /tmp/x-ui.modified
 chmod +x x-ui
 chmod +x x-ui.sh
+chmod +x tcpfit.sh
 chmod +x x-ui bin/xray-linux-amd64
 
 mv -f /usr/bin/x-ui-temp /usr/bin/x-ui
@@ -369,28 +402,28 @@ systemctl stop warp-go >/dev/null 2>&1
 wg-quick down wgcf >/dev/null 2>&1
 
 echo ""
-echo -e "------->>>>${green}X-Panel 改版 ${MOD_VERSION}（一键新建节点版）<<<<安装成功，正在启动..."
+echo -e "------->>>>${green}apex-panel 改版 ${MOD_VERSION}（一键新建节点版）<<<<安装成功，正在启动..."
 sleep 1
 echo ""
 echo -e " ---------------------"
-echo -e " |${green}X-Panel 控制菜单用法 ${plain}|${plain}"
+echo -e " |${green}apex-panel 控制菜单用法 ${plain}|${plain}"
 echo -e " | ${yellow}一个更好的面板 ${plain}|${plain}"
 echo -e " | ${yellow}基于Xray Core构建 ${plain}|${plain}"
 echo -e "--------------------------------------------"
 echo -e "x-ui - 进入管理脚本"
-echo -e "x-ui start - 启动 X-Panel 面板"
-echo -e "x-ui stop - 关闭 X-Panel 面板"
-echo -e "x-ui restart - 重启 X-Panel 面板"
-echo -e "x-ui status - 查看 X-Panel 状态"
+echo -e "x-ui start - 启动 apex-panel 面板"
+echo -e "x-ui stop - 关闭 apex-panel 面板"
+echo -e "x-ui restart - 重启 apex-panel 面板"
+echo -e "x-ui status - 查看 apex-panel 状态"
 echo -e "x-ui settings - 查看当前设置信息"
-echo -e "x-ui enable - 启用 X-Panel 开机启动"
-echo -e "x-ui disable - 禁用 X-Panel 开机启动"
-echo -e "x-ui log - 查看 X-Panel 运行日志"
+echo -e "x-ui enable - 启用 apex-panel 开机启动"
+echo -e "x-ui disable - 禁用 apex-panel 开机启动"
+echo -e "x-ui log - 查看 apex-panel 运行日志"
 echo -e "x-ui banlog - 检查 Fail2ban 禁止日志"
-echo -e "x-ui update - 更新 X-Panel 面板（注意：不要用它更新，否则会覆盖回官方版丢掉一键功能）"
-echo -e "x-ui custom - 自定义 X-Panel 版本"
-echo -e "x-ui install - 安装 X-Panel 面板"
-echo -e "x-ui uninstall - 卸载 X-Panel 面板"
+echo -e "x-ui update - 更新 apex-panel 面板（注意：不要用它更新，否则会覆盖回官方版丢掉一键功能）"
+echo -e "x-ui custom - 自定义 apex-panel 版本"
+echo -e "x-ui install - 安装 apex-panel 面板"
+echo -e "x-ui uninstall - 卸载 apex-panel 面板"
 echo -e "--------------------------------------------"
 echo ""
 sleep 3

@@ -10,6 +10,13 @@ bash <(curl -Ls https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/m
 
 安装后按提示操作。已装旧版要升级时，在安装提示里选 n，保留旧的登录、端口、路径和入站，不要点面板里的“更新面板”按钮，否则会被覆盖回官方版。
 
+## v40 主要内容（版本号与二进制 Release 统一，在 v39 基础上新增）
+
+- 管理脚本改名：菜单里显示的名字由 X-Panel 改为 apex-panel（脚本内的 GitHub 功能地址不动）
+- 管理脚本菜单底部推广和群信息已去掉（此前靠安装时临时删，本版脚本本身就是干净的）
+- 新增菜单 26「TCP 调优」：随包内置 tcpfit v0.5.9，装在 /usr/local/x-ui/tcpfit.sh，离线可用，默认关闭 tcpfit 的匿名运行计数；版本跟随发版更新，更新面板不会冲掉已调好的参数（参数在 /etc/sysctl.d 和 /var/lib/tcpfit 里）
+- 本版只改安装脚本和管理脚本，面板二进制不变，仍为 Release v39
+
 ## v12 主要内容（在 v11 基础上新增）
 
 - 一键重置所有流量：入站列表下拉菜单里一项，一次确认，同时清入站上下行和全部客户端上下行，不改限额、到期时间，不删入站和客户端
@@ -33,4 +40,4 @@ bash <(curl -Ls https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/m
 ## 注意
 
 - Hysteria2 端口跳跃需要自己放行 UDP 端口段并做 DNAT，面板里有命令提示
-- 本仓库保留 v4、v9、v11 Release，v12 为最新版
+- 本仓库保留 v4、v9、v11 Release，v40 为最新版（二进制构建仍为 v39）
