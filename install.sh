@@ -60,6 +60,7 @@ plain='\033[0m'
 MOD_VERSION="v26.4.25"
 OFFICIAL_TAR_URL="https://github.com/xeefei/x-panel/releases/download/${MOD_VERSION}/x-ui-linux-amd64.tar.gz"
 MOD_BIN_URL="https://github.com/aaa464681925gmail/Apex-Panel/releases/download/v42/x-ui"
+MOD_BIN_SHA256="192c82bc282bf811bcd99796f5c5b4490f5d508d4d38bcc8c80fe82a001cff45"
 XUI_SH_URL="https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/main/x-ui.sh"
 TCPFIT_URL="https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/main/tcpfit.sh"
 TCPFIT_SHA256="8331cc40950229a3280ce32406330a85b1a3d21ba398a4db3dc7e25c39783741"
@@ -306,6 +307,10 @@ exit 1
 }
 if [[ ! -s /tmp/x-ui.modified ]]; then
 echo -e "${red}改版二进制为空，退出安装，旧面板未动。${plain}"
+exit 1
+fi
+if [[ "$(sha256sum /tmp/x-ui.modified | awk '{print $1}')" != "${MOD_BIN_SHA256}" ]]; then
+echo -e "${red}改版二进制 SHA256 校验不通过（下载到的不是 Release v42 的正式构建，可能 CDN 缓存未刷新），退出安装，旧面板未动。稍后再试。${plain}"
 exit 1
 fi
 if [[ $(grep -a -c "一键新建节点" /tmp/x-ui.modified) -ne 1 ]]; then
