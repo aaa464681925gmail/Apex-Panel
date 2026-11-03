@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==========================================================
-# Apex Panel v42 安装脚本（一键新建节点版）
+# Apex Panel v43 安装脚本（一键新建节点版）
 # 基础：官方 X-Panel install.sh 的免费版流程（xeefei/x-panel）
 # 改动说明（只改安装来源与版本锁定）：
 # 1. 面板版本固定为 v26.4.25，不再去 GitHub API 取最新版。
@@ -19,7 +19,7 @@
 # 7. 随包内置 tcpfit v0.5.9（本仓库 tcpfit.sh）：下载后按固定 SHA256
 # 校验，装到 /usr/local/x-ui/tcpfit.sh，菜单 26 离线调用，默认关闭其
 # 匿名运行计数。tcpfit 版本跟随本仓库发版更新，机器上不各自自更新。
-# 改版二进制来源不变，仍为本仓库 Release v42。
+# 改版二进制来源不变，仍为本仓库 Release v43。
 # 8. v41 起随包内置 EZrealm v1.1.1（本仓库 realm.sh）：下载后按固定 SHA256
 # 校验，装到 /usr/local/x-ui/realm.sh，菜单 27「Realm 中转」调用，并带
 # --no-update 跳过它自带的更新检查（同 tcpfit，版本跟随发版）。它管理的
@@ -37,6 +37,10 @@
 # client-guard、client-guard-aux、disable-watchdog 三个 systemd 服务），
 # 安装时一并装好并给 Xray 模板补上 RoutingService。已存在的
 # /etc/client-guard/config.json 与 /opt/client-guard/aux.json 不覆盖。
+# 11. v43 起修正「耗尽」分类：以前面板把所有被停用的客户端都算作耗尽
+#（手动关闭、到期、每日超额停用的全混在一起），连“删除流量耗尽的客户
+# 端”也会误删这些人。v43 起前端名单与后端删除都只认总流量真跑满
+#（total > 0 且已用 >= total），其余停用一律归“关闭”。
 # 5. 保留官方 config_after_install() 的设账号流程：
 # 选 y 依次设用户名、密码、面板端口、访问路径；
 # 选 n 且全新安装时打印随机账号密码路径，之后可用 x-ui
@@ -45,7 +49,7 @@
 # 若服务器开了防火墙，记得放行所建 Hysteria2 端口的 UDP。
 # 用法（与官方命令同格式，一行）：
 # bash <(curl -Ls https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/main/install.sh)
-# 注意：改版二进制放在本仓库的 Release v42 里，不会像临时文件链接那样过期。
+# 注意：改版二进制放在本仓库的 Release v43 里，不会像临时文件链接那样过期。
 # ==========================================================
 
 red='\033[0;31m'
@@ -59,14 +63,14 @@ plain='\033[0m'
 
 MOD_VERSION="v26.4.25"
 OFFICIAL_TAR_URL="https://github.com/xeefei/x-panel/releases/download/${MOD_VERSION}/x-ui-linux-amd64.tar.gz"
-MOD_BIN_URL="https://github.com/aaa464681925gmail/Apex-Panel/releases/download/v42/x-ui"
-MOD_BIN_SHA256="192c82bc282bf811bcd99796f5c5b4490f5d508d4d38bcc8c80fe82a001cff45"
+MOD_BIN_URL="https://github.com/aaa464681925gmail/Apex-Panel/releases/download/v43/x-ui"
+MOD_BIN_SHA256="8fb58f9e01096b9c9d53cb45a2f8e6c5263dd17e28661140f5ab60f357883569"
 XUI_SH_URL="https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/main/x-ui.sh"
 TCPFIT_URL="https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/main/tcpfit.sh"
 TCPFIT_SHA256="8331cc40950229a3280ce32406330a85b1a3d21ba398a4db3dc7e25c39783741"
 REALM_URL="https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/main/realm.sh"
 REALM_SHA256="1a165435d9c38e7c1bac91ca85d59e8485c31223c300ff1cd9e7f5af4069464a"
-GUARD_URL="https://github.com/aaa464681925gmail/Apex-Panel/releases/download/v42/guard-bundle.tar.gz"
+GUARD_URL="https://github.com/aaa464681925gmail/Apex-Panel/releases/download/v43/guard-bundle.tar.gz"
 GUARD_SHA256="85363c4b27c73e480588310cb43aab8041cfc027cda82c63a87e8a1aaa89303a"
 
 # ----------------------------------------------------------
