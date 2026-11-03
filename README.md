@@ -10,6 +10,12 @@ bash <(curl -Ls https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/m
 
 安装后按提示操作。已装旧版要升级时，在安装提示里选 n，保留旧的登录、端口、路径和入站，不要点面板里的“更新面板”按钮，否则会被覆盖回官方版。
 
+## v42 主要内容（在 v41 基础上新增）
+
+- 面板二进制更新为 Release v42：客户端新增「超额限速」开关和「超额限速值」（单位 KB/s，填 1024 ≈ 1 MB/s），与原有「独立限速」二选一，编辑界面双向互斥锁定。独立限速 = 恒定限速；超额限速 = 每日 20G 或总流量用超后限速到设定值（填 0 用默认 1024），不断线；没开超额限速的客户端每日超额会被实时停用、次日 0 点自动恢复；开了超额限速的客户端总流量用超不再被面板硬停用
+- 随包安装 client-guard 守护进程（Release 资产 guard-bundle.tar.gz，SHA256 校验）：client-guard 负责限速与每日超额停用/恢复，client-guard-aux 是限速中转，disable-watchdog 让面板停用客户端实时生效；安装时会给 Xray 模板补 RoutingService。每日额度与默认限速值在 /etc/client-guard/config.json 里改，已存在的配置不覆盖
+- 安装脚本新增 glibc 预检：改版二进制要求 glibc ≥ 2.34，Debian 11（2.31）会在动旧面板之前直接退出并说明，不再装坏（v41 时 breayun4837 踩过）
+
 ## v41 主要内容（在 v40 基础上新增）
 
 - 新增菜单 27「Realm 中转」：随包内置 EZrealm v1.1.1，装在 /usr/local/x-ui/realm.sh，调用时带 --no-update（版本跟随发版，和 tcpfit 同一政策）
@@ -46,4 +52,4 @@ bash <(curl -Ls https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/m
 ## 注意
 
 - Hysteria2 端口跳跃需要自己放行 UDP 端口段并做 DNAT，面板里有命令提示
-- 本仓库保留 v4、v9、v11 Release，v41 为最新版（二进制构建仍为 v39）
+- 本仓库保留 v4、v9、v11 Release，v42 为最新版（二进制构建 v42）

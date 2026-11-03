@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==========================================================
-# Apex Panel v41 安装脚本（一键新建节点版）
+# Apex Panel v42 安装脚本（一键新建节点版）
 # 基础：官方 X-Panel install.sh 的免费版流程（xeefei/x-panel）
 # 改动说明（只改安装来源与版本锁定）：
 # 1. 面板版本固定为 v26.4.25，不再去 GitHub API 取最新版。
@@ -19,12 +19,24 @@
 # 7. 随包内置 tcpfit v0.5.9（本仓库 tcpfit.sh）：下载后按固定 SHA256
 # 校验，装到 /usr/local/x-ui/tcpfit.sh，菜单 26 离线调用，默认关闭其
 # 匿名运行计数。tcpfit 版本跟随本仓库发版更新，机器上不各自自更新。
-# 改版二进制来源不变，仍为本仓库 Release v39。
+# 改版二进制来源不变，仍为本仓库 Release v42。
 # 8. v41 起随包内置 EZrealm v1.1.1（本仓库 realm.sh）：下载后按固定 SHA256
 # 校验，装到 /usr/local/x-ui/realm.sh，菜单 27「Realm 中转」调用，并带
 # --no-update 跳过它自带的更新检查（同 tcpfit，版本跟随发版）。它管理的
 # 仍是 /root/realm/config.toml 与 realm.service，已装过 Realm 的机器原有
 # 转发规则不受影响，安装过程不碰 /root/realm。
+# 9. v42 起加 glibc 预检：改版二进制要求 glibc >= 2.34（Debian 11 自带
+# 2.31 装不上，v41 曾因此让 breayun4837 面板起不来）。本检查在下载校验
+# 之后、停服务删旧目录之前执行：本机 glibc 低于 2.34，或 ldd 报告改版
+# 二进制有缺失依赖，直接退出，旧面板原样保留。Debian 11 机器请走
+# “只换脚本”或在本机重编二进制，不要直接跑安装脚本。
+# 10. v42 起面板内置「超额限速」：客户端的独立限速（恒定限速，KB/s）与
+# 超额限速（每日 20G 或总流量用超后限速到设定值，不断线）二选一；没开
+# 超额限速的客户端每日超额会被实时停用、次日自动恢复。限速由随包的
+# client-guard 守护进程执行（Release 里的 guard-bundle.tar.gz，含
+# client-guard、client-guard-aux、disable-watchdog 三个 systemd 服务），
+# 安装时一并装好并给 Xray 模板补上 RoutingService。已存在的
+# /etc/client-guard/config.json 与 /opt/client-guard/aux.json 不覆盖。
 # 5. 保留官方 config_after_install() 的设账号流程：
 # 选 y 依次设用户名、密码、面板端口、访问路径；
 # 选 n 且全新安装时打印随机账号密码路径，之后可用 x-ui
@@ -33,7 +45,7 @@
 # 若服务器开了防火墙，记得放行所建 Hysteria2 端口的 UDP。
 # 用法（与官方命令同格式，一行）：
 # bash <(curl -Ls https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/main/install.sh)
-# 注意：改版二进制放在本仓库的 Release v33 里，不会像临时文件链接那样过期。
+# 注意：改版二进制放在本仓库的 Release v42 里，不会像临时文件链接那样过期。
 # ==========================================================
 
 red='\033[0;31m'
@@ -47,12 +59,14 @@ plain='\033[0m'
 
 MOD_VERSION="v26.4.25"
 OFFICIAL_TAR_URL="https://github.com/xeefei/x-panel/releases/download/${MOD_VERSION}/x-ui-linux-amd64.tar.gz"
-MOD_BIN_URL="https://github.com/aaa464681925gmail/Apex-Panel/releases/download/v39/x-ui"
+MOD_BIN_URL="https://github.com/aaa464681925gmail/Apex-Panel/releases/download/v42/x-ui"
 XUI_SH_URL="https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/main/x-ui.sh"
 TCPFIT_URL="https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/main/tcpfit.sh"
 TCPFIT_SHA256="8331cc40950229a3280ce32406330a85b1a3d21ba398a4db3dc7e25c39783741"
 REALM_URL="https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/main/realm.sh"
 REALM_SHA256="1a165435d9c38e7c1bac91ca85d59e8485c31223c300ff1cd9e7f5af4069464a"
+GUARD_URL="https://github.com/aaa464681925gmail/Apex-Panel/releases/download/v42/guard-bundle.tar.gz"
+GUARD_SHA256="85363c4b27c73e480588310cb43aab8041cfc027cda82c63a87e8a1aaa89303a"
 
 # ----------------------------------------------------------
 # 检查操作系统与架构（amd64 专属）
@@ -331,6 +345,19 @@ echo -e "${red}改版二进制校验失败：缺少 Hysteria2 端口跳跃，退
 exit 1
 fi
 chmod +x /tmp/x-ui.modified
+
+# ---- glibc 预检（v42）：不兼容的机器在这里退出，旧面板未动 ----
+glibc_version=$(ldd --version 2>/dev/null | head -1 | grep -Eo '[0-9]+\.[0-9]+' | head -1)
+if [[ -n "${glibc_version}" ]]; then
+if [[ "$(printf '%s\n%s\n' "2.34" "${glibc_version}" | sort -V | head -1)" != "2.34" ]]; then
+echo -e "${red}本机 glibc 为 ${glibc_version}，低于改版二进制要求的 2.34，退出安装，旧面板未动。Debian 11 请走“只换脚本”或在本机重编二进制。${plain}"
+exit 1
+fi
+fi
+if ldd /tmp/x-ui.modified 2>/dev/null | grep -q "not found"; then
+echo -e "${red}改版二进制依赖缺失（ldd 报告 not found），退出安装，旧面板未动。${plain}"
+exit 1
+fi
 echo -e "${green}--------->>两个文件都校验通过，开始安装...${plain}"
 
 wget -O /usr/bin/x-ui-temp ${XUI_SH_URL} || {
@@ -383,6 +410,20 @@ echo -e "${red}EZrealm 版本校验失败：不是 v1.1.1，退出安装，旧�
 exit 1
 fi
 
+echo -e "${green}--------->>下载内置 client-guard 守护包...${plain}"
+curl -fsSL ${GUARD_URL} -o /tmp/guard-bundle.tar.gz || {
+echo -e "${red}下载 client-guard 守护包失败，退出安装，旧面板未动。${plain}"
+exit 1
+}
+if [[ ! -s /tmp/guard-bundle.tar.gz ]]; then
+echo -e "${red}client-guard 守护包为空，退出安装，旧面板未动。${plain}"
+exit 1
+fi
+if [[ "$(sha256sum /tmp/guard-bundle.tar.gz | awk '{print $1}')" != "${GUARD_SHA256}" ]]; then
+echo -e "${red}client-guard 守护包 SHA256 校验不通过，退出安装，旧面板未动。${plain}"
+exit 1
+fi
+
 
 # ---- 第二步：停服务、删旧目录、解压 ----
 if [[ -e /usr/local/x-ui/ ]]; then
@@ -429,6 +470,51 @@ systemctl enable x-ui
 systemctl start x-ui
 systemctl stop warp-go >/dev/null 2>&1
 wg-quick down wgcf >/dev/null 2>&1
+
+# ---- v42: 安装 client-guard 限速守护（超额限速/独立限速的执行端） ----
+echo -e "${green}--------->>安装 client-guard 限速守护服务...${plain}"
+if command -v python3 >/dev/null 2>&1; then
+systemctl stop x-ui
+mkdir -p /tmp/guard-bundle && tar xzf /tmp/guard-bundle.tar.gz -C /tmp/guard-bundle
+cp -f /tmp/guard-bundle/usr/local/bin/client-guard.py /usr/local/bin/client-guard.py
+cp -f /tmp/guard-bundle/usr/local/bin/disable-watchdog.py /usr/local/bin/disable-watchdog.py
+chmod +x /usr/local/bin/client-guard.py /usr/local/bin/disable-watchdog.py
+mkdir -p /etc/client-guard /opt/client-guard
+[[ -f /etc/client-guard/config.json ]] || cp -f /tmp/guard-bundle/etc/client-guard/config.json /etc/client-guard/config.json
+[[ -f /opt/client-guard/aux.json ]] || cp -f /tmp/guard-bundle/opt/client-guard/aux.json /opt/client-guard/aux.json
+cp -f /tmp/guard-bundle/etc/systemd/system/client-guard.service /etc/systemd/system/
+cp -f /tmp/guard-bundle/etc/systemd/system/client-guard-aux.service /etc/systemd/system/
+cp -f /tmp/guard-bundle/etc/systemd/system/disable-watchdog.service /etc/systemd/system/
+rm -rf /tmp/guard-bundle /tmp/guard-bundle.tar.gz
+python3 - << 'CGPYEOF'
+import json, sqlite3
+try:
+    db = sqlite3.connect("/etc/x-ui/x-ui.db")
+    row = db.execute("SELECT value FROM settings WHERE key='xrayTemplateConfig'").fetchone()
+    if row:
+        cfg = json.loads(row[0])
+        services = cfg.setdefault("api", {}).setdefault("services", [])
+        if "RoutingService" not in services:
+            services.append("RoutingService")
+            db.execute("UPDATE settings SET value=? WHERE key='xrayTemplateConfig'", (json.dumps(cfg),))
+            db.commit()
+            print("client-guard: RoutingService added to xray template")
+        else:
+            print("client-guard: RoutingService already present")
+    else:
+        print("client-guard: xray template not seeded yet (fresh install); RoutingService will be added on the next upgrade run")
+    db.close()
+except Exception as e:
+    print("client-guard: template patch skipped:", e)
+CGPYEOF
+systemctl daemon-reload
+systemctl start x-ui
+systemctl enable client-guard client-guard-aux disable-watchdog >/dev/null 2>&1
+systemctl start client-guard client-guard-aux disable-watchdog
+echo -e "${green}--------->>client-guard 已安装（每日默认 20G，超额默认限速 1024 KB/s，可改 /etc/client-guard/config.json）${plain}"
+else
+echo -e "${yellow}未检测到 python3，跳过 client-guard 安装：面板的超额限速将只有界面、没有执行端。装好 python3 后可重跑本脚本补装。${plain}"
+fi
 
 echo ""
 echo -e "------->>>>${green}apex-panel 改版 ${MOD_VERSION}（一键新建节点版）<<<<安装成功，正在启动..."
