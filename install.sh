@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==========================================================
-# Apex Panel v52 安装脚本（一键新建节点版）
+# Apex Panel v53 安装脚本（一键新建节点版）
 # 基础：官方 X-Panel install.sh 的免费版流程（xeefei/x-panel）
 # 改动说明（只改安装来源与版本锁定）：
 # 1. 面板版本固定为 v26.4.25，不再去 GitHub API 取最新版。
@@ -19,7 +19,7 @@
 # 7. 随包内置 tcpfit v0.5.9（本仓库 tcpfit.sh）：下载后按固定 SHA256
 # 校验，装到 /usr/local/x-ui/tcpfit.sh，菜单 26 离线调用，默认关闭其
 # 匿名运行计数。tcpfit 版本跟随本仓库发版更新，机器上不各自自更新。
-# 改版二进制来源不变，仍为本仓库 Release v52。
+# 改版二进制来源不变，仍为本仓库 Release v53。
 # 8. 菜单 27「Realm 中转」不再随包内置脚本（旧版内置的 EZrealm 已移除）：
 # 运行时直接从 realm-xwPF 官方仓库（zywe03/realm-xwPF）获取 xwPF.sh
 # 并运行，其自安装到 /usr/local/bin（pf 命令）。xwPF 的 realm 落盘
@@ -84,6 +84,11 @@
 # 用户自行 wget 安装的独立 EZrealm（同布局）与面板 Realm 互斥，
 # 同一台机器二选一，不要在装有独立 EZrealm 的机器上点面板的
 # 「安装 Realm」。
+# 19. v53 起 Realm 规则判重改为按「端口 + 地址重叠」判断：同一端口
+# 下，任一监听为通配地址（0.0.0.0 / [::]）或与已有监听同址即算冲突
+# 并拦下（v52 按字符串判重，填本机 IP 可绕过，realm 会同时加载两条
+# 并静默抢占，BW-NL 实证）。另：新增/修改/删除规则后若 realm 服务
+# 未能恢复运行，自动回滚到修改前的配置与规则文件，不留半成品。
 # 5. 保留官方 config_after_install() 的设账号流程：
 # 选 y 依次设用户名、密码、面板端口、访问路径；
 # 选 n 且全新安装时打印随机账号密码路径，之后可用 x-ui
@@ -92,7 +97,7 @@
 # 若服务器开了防火墙，记得放行所建 Hysteria2 端口的 UDP。
 # 用法（与官方命令同格式，一行）：
 # bash <(curl -Ls https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/main/install.sh)
-# 注意：改版二进制放在本仓库的 Release v52 里，不会像临时文件链接那样过期。
+# 注意：改版二进制放在本仓库的 Release v53 里，不会像临时文件链接那样过期。
 # ==========================================================
 
 red='\033[0;31m'
@@ -106,12 +111,12 @@ plain='\033[0m'
 
 MOD_VERSION="v26.4.25"
 OFFICIAL_TAR_URL="https://github.com/xeefei/x-panel/releases/download/${MOD_VERSION}/x-ui-linux-amd64.tar.gz"
-MOD_BIN_URL="https://github.com/aaa464681925gmail/Apex-Panel/releases/download/v52/x-ui"
-MOD_BIN_SHA256="c7808153c3a85b8f651ba9da12e848c9f773cbf67877d66daa49784aec83cd57"
+MOD_BIN_URL="https://github.com/aaa464681925gmail/Apex-Panel/releases/download/v53/x-ui"
+MOD_BIN_SHA256="cba9fef18f9c4831f5dd82fa95307428e68eede3d54fb734f07766c2af7deae0"
 XUI_SH_URL="https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/main/x-ui.sh"
 TCPFIT_URL="https://raw.githubusercontent.com/aaa464681925gmail/Apex-Panel/main/tcpfit.sh"
 TCPFIT_SHA256="8331cc40950229a3280ce32406330a85b1a3d21ba398a4db3dc7e25c39783741"
-GUARD_URL="https://github.com/aaa464681925gmail/Apex-Panel/releases/download/v52/guard-bundle.tar.gz"
+GUARD_URL="https://github.com/aaa464681925gmail/Apex-Panel/releases/download/v53/guard-bundle.tar.gz"
 GUARD_SHA256="5af1aeaf953a647b30d428ce6aaaa07898f4fd7f274aeb22eda505265c1be75c"
 
 # ----------------------------------------------------------
@@ -355,7 +360,7 @@ echo -e "${red}改版二进制为空，退出安装，旧面板未动。${plain}
 exit 1
 fi
 if [[ "$(sha256sum /tmp/x-ui.modified | awk '{print $1}')" != "${MOD_BIN_SHA256}" ]]; then
-echo -e "${red}改版二进制 SHA256 校验不通过（下载到的不是 Release v52 的正式构建，可能 CDN 缓存未刷新），退出安装，旧面板未动。稍后再试。${plain}"
+echo -e "${red}改版二进制 SHA256 校验不通过（下载到的不是 Release v53 的正式构建，可能 CDN 缓存未刷新），退出安装，旧面板未动。稍后再试。${plain}"
 exit 1
 fi
 if [[ $(grep -a -c "一键新建节点" /tmp/x-ui.modified) -ne 1 ]]; then
