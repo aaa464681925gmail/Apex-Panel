@@ -2064,13 +2064,29 @@ run_tcpfit() {
 }
 
 run_realm() {
-    local realm_script="/usr/local/x-ui/realm.sh"
-    # 随发版走：带 --no-update 跳过 EZrealm 的自带更新检查，避免单机自更新与包内版本脱节
-    if [[ -f ${realm_script} ]]; then
-        bash "${realm_script}" --no-update
-    else
-        echo -e "${red}未找到内置 realm 管理脚本：${realm_script}，请重新运行安装脚本补齐${plain}"
+    # Realm 中转：realm-xwPF（zywe03/realm-xwPF）。缺脚本时只装脚本文件
+    # 本体（xwPF.sh + lib 模块 + pf 快捷命令）再打开菜单。
+    # 注意：不要用官方的 install 子命令——它会顺带运行 smart_install，
+    # 把 /etc/realm 的现有配置与规则重置清空；面板与 xwPF 共用同一套
+    # /etc/realm 文件，冲掉的规则面板里也会消失。realm 本体的安装/更新
+    # 走 Apex 面板「Realm 转发」页（glibc2.28 构建，适配 Debian 11/12）。
+    local xwpf_raw="https://raw.githubusercontent.com/zywe03/realm-xwPF/main"
+    if [[ ! -f /usr/local/bin/lib/core.sh ]]; then
+        echo -e "${yellow}正在安装 realm-xwPF 脚本（zywe03/realm-xwPF）...${plain}"
+        mkdir -p /usr/local/bin/lib
+        local ok=1 f
+        curl -fsSL "${xwpf_raw}/xwPF.sh" -o /usr/local/bin/xwPF.sh || ok=0
+        for f in core.sh rules.sh server.sh realm.sh ui.sh; do
+            curl -fsSL "${xwpf_raw}/lib/${f}" -o "/usr/local/bin/lib/${f}" || ok=0
+        done
+        if [[ ${ok} -ne 1 ]]; then
+            echo -e "${red}realm-xwPF 下载失败，请检查网络后重试${plain}"
+            return 1
+        fi
+        chmod +x /usr/local/bin/xwPF.sh
+        ln -sf /usr/local/bin/xwPF.sh /usr/local/bin/pf
     fi
+    bash /usr/local/bin/xwPF.sh
 }
 
 show_menu() {
