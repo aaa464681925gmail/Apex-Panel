@@ -2063,32 +2063,6 @@ run_tcpfit() {
     before_show_menu
 }
 
-run_realm() {
-    # Realm 中转：realm-xwPF（zywe03/realm-xwPF）。缺脚本时只装脚本文件
-    # 本体（xwPF.sh + lib 模块 + pf 快捷命令）再打开菜单。
-    # 注意：不要用官方的 install 子命令——它会顺带运行 smart_install，
-    # 把 /etc/realm 的现有配置与规则重置清空；面板与 xwPF 共用同一套
-    # /etc/realm 文件，冲掉的规则面板里也会消失。realm 本体的安装/更新
-    # 走 Apex 面板「Realm 转发」页（glibc2.28 构建，适配 Debian 11/12）。
-    local xwpf_raw="https://raw.githubusercontent.com/zywe03/realm-xwPF/main"
-    if [[ ! -f /usr/local/bin/lib/core.sh ]]; then
-        echo -e "${yellow}正在安装 realm-xwPF 脚本（zywe03/realm-xwPF）...${plain}"
-        mkdir -p /usr/local/bin/lib
-        local ok=1 f
-        curl -fsSL "${xwpf_raw}/xwPF.sh" -o /usr/local/bin/xwPF.sh || ok=0
-        for f in core.sh rules.sh server.sh realm.sh ui.sh; do
-            curl -fsSL "${xwpf_raw}/lib/${f}" -o "/usr/local/bin/lib/${f}" || ok=0
-        done
-        if [[ ${ok} -ne 1 ]]; then
-            echo -e "${red}realm-xwPF 下载失败，请检查网络后重试${plain}"
-            return 1
-        fi
-        chmod +x /usr/local/bin/xwPF.sh
-        ln -sf /usr/local/bin/xwPF.sh /usr/local/bin/pf
-    fi
-    bash /usr/local/bin/xwPF.sh
-}
-
 show_menu() {
     echo -e "
 ——————————————————————
@@ -2128,7 +2102,6 @@ show_menu() {
   ${green}24.${plain} Speedtest by Ookla
   ${green}25.${plain} 安装订阅转换 
   ${green}26.${plain} TCP 调优
-  ${green}27.${plain} Realm 中转
 ——————————————————————
 "
     show_status
@@ -2216,11 +2189,8 @@ show_menu() {
     26)
         run_tcpfit
         ;;
-    27)
-        run_realm
-        ;;
     *)
-        LOGE "请输入正确的数字选项 [0-27]"
+        LOGE "请输入正确的数字选项 [0-26]"
         ;;
     esac
 }
