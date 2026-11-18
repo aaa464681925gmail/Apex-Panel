@@ -432,7 +432,7 @@ echo -e "${red}管理脚本为空，退出安装，旧面板未动。${plain}"
 exit 1
 fi
 
-if [[ $(grep -c "TCP 调优" /usr/bin/x-ui-temp) -lt 1 || $(grep -c "Realm 中转" /usr/bin/x-ui-temp) -lt 1 || $(grep -c "apex-panel" /usr/bin/x-ui-temp) -lt 1 || $(grep -c "aff.php" /usr/bin/x-ui-temp) -ne 0 ]]; then
+if [[ $(grep -c "TCP 调优" /usr/bin/x-ui-temp) -lt 1 || $(grep -c "apex-panel" /usr/bin/x-ui-temp) -lt 1 || $(grep -c "aff.php" /usr/bin/x-ui-temp) -ne 0 ]]; then
 echo -e "${red}管理脚本校验失败：不是本仓库的 apex-panel 版（缺 TCP 调优菜单、显示名不对或仍带推广），退出安装，旧面板未动。${plain}"
 exit 1
 fi
